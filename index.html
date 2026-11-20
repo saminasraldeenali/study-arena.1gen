@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Study Arena</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root{--r:#e11d2e;--bg:#0a0a0c;--c:#141417;--b:#2a2a30;--tx:#f2f2f4;--mu:#9a9aa5}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,"Segoe UI",Tahoma,sans-serif;line-height:1.6}
+.top{position:sticky;top:0;z-index:5;background:#000}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:3px solid var(--r)}
+h1{font-size:18px;margin:0}h3{margin:0 0 10px;color:var(--r)}
+nav{display:flex;gap:6px;overflow-x:auto;padding:8px 10px;background:#0f0f12}
+nav button{background:#1a1a1f;color:var(--tx);border:1px solid var(--b);border-radius:20px;padding:8px 14px;white-space:nowrap;cursor:pointer;font:inherit}
+nav button.on{background:var(--r);border-color:var(--r);font-weight:700}
+main{max-width:900px;margin:auto}
+.card{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:14px;margin:12px}
+.btn{background:var(--r);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer;margin-top:6px}
+.btn.g{background:transparent;border:1px solid var(--b);color:var(--tx);padding:6px 10px;margin:0}
+.btn:disabled{opacity:.5}
+input,select,textarea{width:100%;background:#0b0b0d;color:var(--tx);border:1px solid var(--b);border-radius:10px;padding:10px;margin:4px 0;font:inherit}
+label{color:var(--mu);font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:130px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--r)}th,td{padding:7px;border:1px solid var(--b);text-align:center}
+tr.now td{background:#2a0b0e}
+.chip{display:inline-block;min-width:28px;padding:2px 8px;margin:2px;border-radius:8px;border:1px solid var(--b);cursor:pointer;user-select:none}
+.chip.done{background:var(--r);border-color:var(--r);text-decoration:line-through}
+.bar{height:8px;background:#222;border-radius:9px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--r);width:0;transition:width .4s}
+#tb{transition:width 1s linear}
+.red{color:var(--r)}
+.pl{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;margin:5px 0;background:#0f0f12;border:1px solid var(--b);border-radius:10px}
+.qh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;min-height:44px}
+.q{font-size:19px;margin:14px 0}
+.opt{display:block;width:100%;text-align:start;margin:8px 0;padding:14px;border-radius:12px;background:#1b1b20;color:var(--tx);border:2px solid var(--b);font:inherit;font-size:16px;cursor:pointer;transition:.15s}
+.opt:hover:not(:disabled){border-color:var(--r);transform:scale(1.01)}
+.opt.ok{border-color:#22c55e;background:#0d2a17}.opt.no{border-color:var(--r);background:#2a0b0e}
+.exp{color:var(--mu)}
+.fire{display:inline-block;animation:fl .5s infinite alternate}
+@keyframes fl{from{transform:scale(1) rotate(-4deg);filter:drop-shadow(0 0 4px #f80)}to{transform:scale(1.25) rotate(4deg);filter:drop-shadow(0 0 14px #f30)}}
+.shake{animation:sh .4s}@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.hot{box-shadow:0 0 25px #e11d2e66 inset}
+.overlay{position:fixed;inset:0;background:#000e;display:flex;align-items:center;justify-content:center;z-index:20;padding:14px}
+.overlay[hidden],.tab[hidden],[hidden]{display:none!important}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--r);padding:12px 18px;border-radius:12px;z-index:50;max-width:90%}
+.big{font-size:34px;text-align:center;margin:10px}
+</style>
+</head>
+<body>
+
+<div id="login" class="overlay" hidden>
+  <div class="card" style="max-width:360px;width:100%">
+    <h2>🔥 <span data-i18n="app"></span></h2>
+    <input id="lname" data-ph="name">
+    <div id="lusers"></div>
+    <button class="btn" id="lgo" data-i18n="start"></button>
+  </div>
+</div>
+
+<div class="top">
+  <header>
+    <h1>🔥 <span data-i18n="app"></span></h1>
+    <div><span id="uname" class="red"></span>
+      <button class="btn g" id="bl">EN</button>
+      <button class="btn g" id="bs">🔊</button>
+      <button class="btn g" id="bo">⎋</button></div>
+  </header>
+  <nav id="nav"></nav>
+</div>
+
+<main>
+<!-- ================= PLAN ================= -->
+<section id="s-plan" class="tab">
+  <div class="card"><h3 data-i18n="today"></h3><div id="today"></div></div>
+  <div class="card"><h3 data-i18n="progress"></h3><div class="bar"><i id="pgb"></i></div><small id="pgt"></small></div>
+  <div class="card" style="overflow-x:auto"><h3 data-i18n="table"></h3><div id="ptab"></div></div>
+  <div class="card"><h3 data-i18n="editplan"></h3>
+    <div class="row">
+      <div><label data-i18n="startdate"></label><input type="date" id="pst"></div>
+      <div><label data-i18n="days"></label><input type="number" id="pdays" min="1"></div>
+    </div>
+    <label data-i18n="subjhint"></label>
+    <textarea id="psub" rows="4"></textarea>
+    <button class="btn" id="pgen" data-i18n="genplan"></button>
+  </div>
+  <div class="card"><h3 data-i18n="method"></h3>
+    <ol><li data-i18n="m1"></li><li data-i18n="m2"></li><li data-i18n="m3"></li><li data-i18n="m4"></li></ol>
+    <p class="red" data-i18n="rule"></p>
+  </div>
+</section>
+
+<!-- ================= REMINDERS ================= -->
+<section id="s-rem" class="tab" hidden>
+  <div class="card"><h3 data-i18n="rem"></h3>
+    <div class="row"><input type="time" id="rt"><input id="rl" data-ph="label"></div>
+    <button class="btn" id="radd" data-i18n="add"></button>
+    <button class="btn g" id="rnot" data-i18n="notif"></button>
+    <p><small data-i18n="remnote"></small></p>
+    <div id="rlist"></div>
+  </div>
+</section>
+
+<!-- ================= SHEETS ================= -->
+<section id="s-sheets" class="tab" hidden>
+  <div class="card"><h3 data-i18n="upload"></h3>
+    <input type="file" id="sf" accept=".pdf,.txt,.md">
+    <div class="row"><input id="ssubj" data-ph="subject"><input id="stitle" data-ph="title"></div>
+    <textarea id="stext" rows="6" data-ph="paste"></textarea>
+    <button class="btn" id="ssave" data-i18n="savesheet"></button>
+  </div>
+  <div class="card"><h3 data-i18n="sheets"></h3><div id="slist"></div></div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section id="s-quiz" class="tab" hidden>
+  <div class="card"><h3 data-i18n="quiz"></h3>
+    <label data-i18n="source"></label><select id="qsrc"></select>
+    <div class="row"><input id="qsubj" data-ph="subject">
+      <input type="number" id="qn" value="10" min="3" max="30"></div>
+    <div class="row">
+      <select id="qd"><option value="easy" data-i18n="easy"></option><option value="medium" selected data-i18n="mid"></option><option value="hard" data-i18n="hard"></option></select>
+      <select id="ql"><option value="auto" data-i18n="auto"></option><option value="Arabic">العربية</option><option value="English">English</option></select>
+    </div>
+    <textarea id="qtext" rows="4" data-ph="paste"></textarea>
+    <button class="btn" id="qgo" data-i18n="gen"></button> <small id="qst"></small>
+    <hr style="border-color:var(--b)">
+    <label data-i18n="saved"></label><select id="qsaved"></select>
+    <button class="btn g" id="qplay" data-i18n="startq"></button>
+  </div>
+  <div class="card" id="qcard" hidden><div id="quizBox"></div></div>
+  <div class="card"><h3 data-i18n="hist"></h3><div id="hist"></div></div>
+</section>
+
+<!-- ================= BATTLE ================= -->
+<section id="s-battle" class="tab" hidden>
+  <div class="card"><h3 data-i18n="host"></h3><select id="bq"></select>
+    <button class="btn" id="bcreate" data-i18n="create"></button></div>
+  <div class="card"><h3 data-i18n="joinh"></h3><input id="jc" data-ph="code" maxlength="5">
+    <button class="btn" id="bjoin" data-i18n="join"></button></div>
+  <div class="card" id="room" hidden>
+    <h3><span data-i18n="room"></span>: <b id="rcode" style="color:#fff;letter-spacing:3px"></b></h3>
+    <div id="board"></div>
+    <button class="btn" id="bstart" hidden data-i18n="startb"></button>
+  </div>
+  <div class="card" id="bqz" hidden><div id="battleQuiz"></div></div>
+</section>
+
+<!-- ================= SETTINGS ================= -->
+<section id="s-set" class="tab" hidden>
+  <div class="card"><h3 data-i18n="aiset"></h3>
+    <label data-i18n="provider"></label>
+    <select id="aip">
+      <option value="openai">OpenAI / OpenRouter / Groq (OpenAI-compatible)</option>
+      <option value="anthropic">Anthropic (Claude)</option>
+      <option value="gemini">Google Gemini</option>
+    </select>
+    <label data-i18n="base"></label><input id="aib" placeholder="https://api.openai.com/v1">
+    <label data-i18n="model"></label><input id="aim" placeholder="gpt-4o-mini / claude-sonnet-5-5 / gemini-2.0-flash">
+    <label data-i18n="key"></label><input id="aik" type="password">
+    <p><small class="red" data-i18n="keywarn"></small></p>
+  </div>
+  <div class="card"><h3 data-i18n="look"></h3>
+    <label data-i18n="accent"></label><input type="color" id="acc" style="height:44px">
+    <label><input type="checkbox" id="snd" style="width:auto"> <span data-i18n="sound"></span></label>
+  </div>
+  <div class="card"><button class="btn" id="sset" data-i18n="savebtn"></button>
+    <button class="btn g" id="exp" data-i18n="export"></button>
+    <button class="btn g" id="imp" data-i18n="import"></button>
+    <input type="file" id="impf" accept=".json" hidden>
+  </div>
+</section>
+</main>
+
+<script>
+/* ========== helpers ========== */
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const todayISO=()=>new Date().toISOString().slice(0,10);
+function toast(m){const d=document.createElement('div');d.className='toast';d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),3500)}
+
+/* ========== i18n ========== */
+const I={
+ar:{app:'ساحة المذاكرة',plan:'الخطة',rem:'التذكير',sheets:'الشيتات',quiz:'اختبار',battle:'تحدي',set:'الإعدادات',
+start:'ابدأ',name:'اسمك',today:'اليوم',progress:'التقدم',table:'الجدول',day:'اليوم',notstart:'الخطة لسه ما بدأت',ended:'انتهت أيام الخطة',late:'متأخر',
+editplan:'تعديل الخطة',startdate:'تاريخ البداية',days:'عدد الأيام',subjhint:'كل سطر: اسم المادة:عدد الشيتات',genplan:'توليد الجدول',
+method:'طريقة ثابتة لكل شيت',m1:'التصفح — 10 دقائق',m2:'الفهم — 40 دقيقة',m3:'المصطلحات — 15 دقيقة',m4:'الاختبار الذاتي — 15 دقيقة',
+rule:'لا تحفظ الترجمة حرفياً؛ افهم المعنى واستوعب الفكرة.',
+add:'إضافة',notif:'تفعيل الإشعارات',label:'التذكير',remnote:'التذكير بيشتغل والموقع مفتوح (أو في الخلفية). للإشعار والموقع مقفول محتاجين خادم Push.',
+upload:'رفع شيت',subject:'المادة',title:'العنوان',paste:'الصق نص الشيت هنا',savesheet:'حفظ الشيت',makequiz:'اعمل أسئلة',del:'حذف',
+source:'المصدر',easy:'سهل',mid:'متوسط',hard:'صعب',auto:'نفس لغة الشيت',gen:'ولّد الأسئلة وابدأ',saved:'اختبارات محفوظة',startq:'ابدأ الاختبار',hist:'السجل',
+next:'التالي',finish:'إنهاء',score:'النقاط',correct:'الصحيحة',streak:'أطول سلسلة',nokey:'حط مفتاح الـ API في الإعدادات',gening:'جاري التوليد...',
+host:'أنشئ غرفة',create:'إنشاء الغرفة',joinh:'ادخل غرفة',join:'دخول',code:'كود الغرفة',room:'الغرفة',startb:'ابدأ التحدي',noquiz:'اختار اختبار محفوظ أول',
+aiset:'الذكاء الاصطناعي',provider:'المزوّد',base:'رابط API (اختياري)',model:'اسم الموديل',key:'مفتاح API',keywarn:'المفتاح بيتخزن في متصفحك فقط. لا تنشر الموقع وفيهو مفتاحك.',
+look:'المظهر',accent:'اللون الأساسي',sound:'الأصوات',savebtn:'حفظ الإعدادات',export:'تصدير نسخة احتياطية',import:'استيراد',done:'تم ✅',xp:'مجموع النقاط',
+empty:'ما في بيانات',alldone:'خلصت مهام اليوم! 🔥',rtime:'حان وقت:'},
+en:{app:'Study Arena',plan:'Plan',rem:'Reminders',sheets:'Sheets',quiz:'Quiz',battle:'Battle',set:'Settings',
+start:'Start',name:'Your name',today:'Today',progress:'Progress',table:'Schedule',day:'Day',notstart:'Plan has not started yet',ended:'Plan days are over',late:'Overdue',
+editplan:'Edit plan',startdate:'Start date',days:'Days',subjhint:'One per line: subject name:number of sheets',genplan:'Generate schedule',
+method:'Fixed method for every sheet',m1:'Skim — 10 min',m2:'Understand — 40 min',m3:'Terms — 15 min',m4:'Self-test — 15 min',
+rule:'Don’t memorize translations word by word; grasp the idea.',
+add:'Add',notif:'Enable notifications',label:'Reminder',remnote:'Reminders fire while the site is open (or in background). Notifications when closed need a push server.',
+upload:'Upload sheet',subject:'Subject',title:'Title',paste:'Paste sheet text here',savesheet:'Save sheet',makequiz:'Make quiz',del:'Delete',
+source:'Source',easy:'Easy',mid:'Medium',hard:'Hard',auto:'Same language as sheet',gen:'Generate & start',saved:'Saved quizzes',startq:'Start quiz',hist:'History',
+next:'Next',finish:'Finish',score:'Score',correct:'Correct',streak:'Best streak',nokey:'Add your API key in Settings',gening:'Generating...',
+host:'Create a room',create:'Create room',joinh:'Join a room',join:'Join',code:'Room code',room:'Room',startb:'Start battle',noquiz:'Pick a saved quiz first',
+aiset:'AI model',provider:'Provider',base:'API base URL (optional)',model:'Model name',key:'API key',keywarn:'Key is stored only in your browser. Never publish the site with your key inside.',
+look:'Appearance',accent:'Accent color',sound:'Sounds',savebtn:'Save settings',export:'Export backup',import:'Import',done:'Done ✅',xp:'Total points',
+empty:'No data',alldone:'Today’s tasks done! 🔥',rtime:'Time for:'}
+};
+let L=localStorage.getItem('sa_lang')||'ar',user=localStorage.getItem('sa_user'),D=null;
+const t=k=>(I[L][k]??k);
+const TABS=['plan','rem','sheets','quiz','battle','set'];
+
+/* ========== database (per user, localStorage) ========== */
+const defaults=()=>({snd:true,accent:'#e11d2e',
+  ai:{provider:'openai',base:'',model:'',key:''},
+  plan:{start:todayISO(),days:14,subjects:[{name:'مبادئ تقنية',n:10},{name:'مبادئ نظم',n:10},{name:'طرائق البرمجة',n:14}]},
+  done:{},rem:[],sheets:[],quizzes:[],hist:[],xp:0});
+const load=()=>{D=Object.assign(defaults(),JSON.parse(localStorage.getItem('sa_u_'+user)||'{}'))};
+const save=()=>localStorage.setItem('sa_u_'+user,JSON.stringify(D));
+
+/* ========== sounds ========== */
+let AC;
+function tone(f,d=.15,type='sine',t0=0,v=.2){
+  if(!D||!D.snd)return;
+  AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+  const o=AC.createOscillator(),g=AC.createGain(),n=AC.currentTime+t0;
+  o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.001,n+d);
+  o.connect(g);g.connect(AC.destination);o.start(n);o.stop(n+d);
+}
+const SFX={
+  ok:()=>{tone(660,.12);tone(880,.18,'sine',.1)},
+  no:()=>tone(180,.35,'sawtooth'),
+  fire:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.12,'triangle',i*.07)),
+  end:()=>[523,659,784,659,784,1047].forEach((f,i)=>tone(f,.2,'triangle',i*.12)),
+  tick:()=>tone(900,.05,'square',0,.08),
+  bell:()=>[880,1100,880,1100].forEach((f,i)=>tone(f,.2,'sine',i*.25))
+};
+
+/* ========== layout / language ========== */
+function applyLang(){
+  document.documentElement.lang=L;document.documentElement.dir=L==='ar'?'rtl':'ltr';
+  $$('[data-i18n]').forEach(e=>e.textContent=t(e.dataset.i18n));
+  $$('[data-ph]').forEach(e=>e.placeholder=t(e.dataset.ph));
+  $('#bl').textContent=L==='ar'?'EN':'ع';
+  const cur=$('#nav .on')?.dataset.t||'plan';
+  $('#nav').innerHTML=TABS.map(x=>`<button data-t="${x}">${t(x)}</button>`).join('');
+  $$('#nav button').forEach(b=>b.onclick=()=>show(b.dataset.t));
+  show(cur);
+  if(D)renderAll();
+}
+function show(tab){
+  $$('.tab').forEach(s=>s.hidden=s.id!=='s-'+tab);
+  $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+}
+function renderAll(){rPlan();rRem();rSheets();rQuizSel();rHist();rSet()}
+
+/* ========== PLAN ========== */
+function tasks(){
+  const p=D.plan,out=[];
+  p.subjects.forEach((s,si)=>{for(let k=1;k<=s.n;k++)out.push({si,k,day:Math.floor((k-1)*p.days/s.n)+1,key:si+':'+k})});
+  return out;
+}
+function dayNo(){
+  const p=D.plan;
+  return Math.floor((new Date().setHours(0,0,0,0)-new Date(p.start+'T00:00:00'))/864e5)+1;
+}
+function fillPlanForm(){
+  $('#pst').value=D.plan.start;$('#pdays').value=D.plan.days;
+  $('#psub').value=D.plan.subjects.map(s=>s.name+':'+s.n).join('\n');
+}
+function rPlan(){
+  const p=D.plan,T=tasks(),dn=dayNo(),dn_=k=>D.done[k];
+  const nd=T.filter(x=>dn_(x.key)).length,pct=T.length?Math.round(nd/T.length*100):0;
+  $('#pgb').style.width=pct+'%';$('#pgt').textContent=pct+'% • '+nd+'/'+T.length;
+  const chip=x=>`<span class="chip ${dn_(x.key)?'done':''}" data-k="${x.key}">${x.k}</span>`;
+  let tb=`<table><tr><th>${t('day')}</th>${p.subjects.map(s=>`<th>${esc(s.name)}</th>`).join('')}</tr>`;
+  for(let d=1;d<=p.days;d++)
+    tb+=`<tr class="${d===dn?'now':''}"><td>${d}</td>${p.subjects.map((s,si)=>`<td>${T.filter(x=>x.day===d&&x.si===si).map(chip).join('')||'—'}</td>`).join('')}</tr>`;
+  $('#ptab').innerHTML=tb+'</table>';
+  const grp=arr=>p.subjects.map((s,si)=>{const a=arr.filter(x=>x.si===si);return a.length?`<div>${esc(s.name)}: ${a.map(chip).join('')}</div>`:''}).join('');
+  const td=T.filter(x=>x.day===dn),od=T.filter(x=>x.day<dn&&!dn_(x.key));
+  $('#today').innerHTML=(dn<1?t('notstart'):dn>p.days?t('ended'):`<b>${t('day')} ${dn}/${p.days}</b>${grp(td)||'<div>—</div>'}`)
+    +(od.length?`<hr style="border-color:var(--b)"><b class="red">${t('late')} (${od.length})</b>${grp(od)}`:'');
+  $$('.chip').forEach(c=>c.onclick=()=>{
+    const k=c.dataset.k;D.done[k]=!D.done[k];save();
+    if(D.done[k]){SFX.ok();
+      const x=T.find(z=>z.key===k);
+      if(x&&T.filter(z=>z.day===x.day).every(z=>D.done[z.key])){SFX.fire();toast(t('alldone'))}}
+    rPlan();
+  });
+}
+$('#pgen').onclick=()=>{
+  const subs=$('#psub').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const i=l.lastIndexOf(':');return{name:l.slice(0,i).trim()||l,n:Math.max(1,parseInt(l.slice(i+1))||1)}});
+  if(!subs.length)return;
+  D.plan={start:$('#pst').value||todayISO(),days:Math.max(1,+$('#pdays').value||14),subjects:subs};
+  D.done={};save();rPlan();toast(t('done'));
+};
+
+/* ========== REMINDERS ========== */
+function rRem(){
+  $('#rlist').innerHTML=D.rem.map((r,i)=>`<div class="pl"><span>⏰ ${r.time} — ${esc(r.label)}</span>
+  <span><button class="btn g" data-t="${i}">${r.on?'🔔':'🔕'}</button> <button class="btn g" data-d="${i}">🗑</button></span></div>`).join('')||`<small>${t('empty')}</small>`;
+  $$('[data-t]',$('#rlist')).forEach(b=>b.onclick=()=>{D.rem[b.dataset.t].on=!D.rem[b.dataset.t].on;save();rRem()});
+  $$('[data-d]',$('#rlist')).forEach(b=>b.onclick=()=>{D.rem.splice(b.dataset.d,1);save();rRem()});
+}
+$('#radd').onclick=()=>{
+  if(!$('#rt').value)return;
+  D.rem.push({time:$('#rt').value,label:$('#rl').value||t('label'),on:true});save();$('#rl').value='';rRem();
+};
+$('#rnot').onclick=()=>{if('Notification' in window)Notification.requestPermission().then(p=>toast(p))};
+function fireReminder(r){
+  SFX.bell();toast('⏰ '+t('rtime')+' '+r.label);
+  if('Notification' in window&&Notification.permission==='granted')new Notification('Study Arena',{body:r.label});
+}
+setInterval(()=>{
+  if(!D)return;
+  const n=new Date(),hm=n.toTimeString().slice(0,5),key=n.toDateString()+hm;
+  D.rem.forEach(r=>{if(r.on&&r.time===hm&&r.last!==key){r.last=key;save();fireReminder(r)}});
+},15000);
+
+/* ========== SHEETS ========== */
+$('#sf').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;let txt='';
+  try{
+    if(/\.pdf$/i.test(f.name)){
+      pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+      for(let i=1;i<=pdf.numPages;i++){const c=await(await pdf.getPage(i)).getTextContent();txt+=c.items.map(x=>x.str).join(' ')+'\n'}
+    }else txt=await f.text();
+  }catch(err){toast(err.message)}
+  $('#stext').value=txt;
+  if(!$('#stitle').value)$('#stitle').value=f.name.replace(/\.\w+$/,'');
+};
+$('#ssave').onclick=()=>{
+  const text=$('#stext').value.trim();if(!text)return;
+  D.sheets.unshift({id:Date.now()+'',subject:$('#ssubj').value.trim()||'General',title:$('#stitle').value.trim()||'Sheet',text});
+  save();$('#stext').value='';$('#stitle').value='';rSheets();rQuizSel();toast(t('done'));
+};
+function rSheets(){
+  $('#slist').innerHTML=D.sheets.map(s=>`<div class="pl"><span>📄 <b>${esc(s.title)}</b> <small>(${esc(s.subject)} • ${s.text.length})</small></span>
+  <span><button class="btn g" data-q="${s.id}">${t('makequiz')}</button> <button class="btn g" data-x="${s.id}">🗑</button></span></div>`).join('')||`<small>${t('empty')}</small>`;
+  $$('[data-q]',$('#slist')).forEach(b=>b.onclick=()=>{show('quiz');$('#qsrc').value=b.dataset.q;fillFromSheet()});
+  $$('[data-x]',$('#slist')).forEach(b=>b.onclick=()=>{D.sheets=D.sheets.filter(s=>s.id!==b.dataset.x);save();rSheets();rQuizSel()});
+}
+
+/* ========== AI ========== */
+async function askAI(prompt){
+  const a=D.ai;if(!a.key||!a.model)throw new Error(t('nokey'));
+  let r,j;
+  if(a.provider==='anthropic'){
+    r=await fetch((a.base||'https://api.anthropic.com')+'/v1/messages',{method:'POST',
+      headers:{'content-type':'application/json','x-api-key':a.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:a.model,max_tokens:4000,messages:[{role:'user',content:prompt}]})});
+    j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
+    return j.content.map(c=>c.text||'').join('');
+  }
+  if(a.provider==='gemini'){
+    r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${a.model}:generateContent?key=${a.key}`,{method:'POST',
+      headers:{'content-type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+    j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
+    return j.candidates[0].content.parts.map(p=>p.text||'').join('');
+  }
+  r=await fetch((a.base||'https://api.openai.com/v1')+'/chat/completions',{method:'POST',
+    headers:{'content-type':'application/json',Authorization:'Bearer '+a.key},
+    body:JSON.stringify({model:a.model,messages:[{role:'user',content:prompt}]})});
+  j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
+  return j.choices[0].message.content;
+}
+function norm(arr){
+  return arr.filter(x=>x&&x.q&&Array.isArray(x.o)&&x.o.length>=2&&x.o[x.a]!==undefined).map(x=>{
+    const c=x.o[x.a],o=shuffle(x.o.slice());return{q:x.q,o,a:o.indexOf(c),e:x.e||''};
+  });
+}
+
+/* ========== QUIZ ENGINE ========== */
+function playQuiz(box,qs,o={}){
+  let i=0,score=0,streak=0,best=0,ok=0,iv,left;const total=qs.length;
+  function next(){
+    clearInterval(iv);if(i>=total)return end();
+    const q=qs[i];left=20;
+    box.classList.toggle('hot',streak>=3);
+    box.innerHTML=`<div class="qh"><span>${i+1}/${total}</span>
+      <span>${streak>=2?`<span class="fire" style="font-size:${22+Math.min(streak,8)*4}px">🔥</span> x${streak}`:''}</span>
+      <b>⭐ ${score}</b></div>
+      <div class="bar"><i id="tb" style="width:100%"></i></div>
+      <h3 class="q" style="color:var(--tx)">${esc(q.q)}</h3>
+      <div>${q.o.map((x,j)=>`<button class="opt" data-j="${j}">${esc(x)}</button>`).join('')}</div><div id="fb"></div>`;
+    $$('.opt',box).forEach(b=>b.onclick=()=>pick(+b.dataset.j));
+    iv=setInterval(tick,1000);
+  }
+  function tick(){
+    left--;const tb=$('#tb',box);if(tb)tb.style.width=(Math.max(left,0)/20*100)+'%';
+    if(left<=3&&left>0)SFX.tick();
+    if(left<=0)pick(-1);
+  }
+  function pick(j){
+    clearInterval(iv);const q=qs[i],right=j===q.a;
+    $$('.opt',box).forEach((b,k)=>{b.disabled=true;if(k===q.a)b.classList.add('ok');else if(k===j)b.classList.add('no')});
+    if(right){streak++;best=Math.max(best,streak);ok++;score+=100+Math.max(left,0)*5+Math.min(streak,5)*10;streak>=3?SFX.fire():SFX.ok()}
+    else{streak=0;SFX.no();box.classList.add('shake');setTimeout(()=>box.classList.remove('shake'),450)}
+    o.onProgress&&o.onProgress({score,idx:i+1});
+    $('#fb',box).innerHTML=`<p class="exp">${right?'✅':'❌'} ${esc(q.e||'')}</p><button class="btn" id="nx">${t(i+1>=total?'finish':'next')}</button>`;
+    $('#nx',box).onclick=()=>{i++;next()};
+  }
+  function end(){
+    SFX.end();box.classList.remove('hot');
+    box.innerHTML=`<div class="big">🏆 ${score}</div>
+      <p style="text-align:center">${t('correct')}: ${ok}/${total} • ${t('streak')}: ${best} 🔥</p>`;
+    o.onEnd&&o.onEnd({score,ok,total,best});
+  }
+  next();
+}
+function record(subj,r){D.hist.unshift({d:todayISO(),subj,...r});D.hist=D.hist.slice(0,50);D.xp+=r.score;save();rHist()}
+function rHist(){
+  $('#hist').innerHTML=`<p>${t('xp')}: <b class="red">${D.xp}</b></p>`+(D.hist.slice(0,8).map(h=>
+    `<div class="pl"><span>${h.d} • ${esc(h.subj)}</span><span>${h.ok}/${h.total} • <b>${h.score}</b></span></div>`).join('')||`<small>${t('empty')}</small>`);
+}
+function rQuizSel(){
+  $('#qsrc').innerHTML=`<option value="">—</option>`+D.sheets.map(s=>`<option value="${s.id}">${esc(s.title)} (${esc(s.subject)})</option>`).join('');
+  const opts=D.quizzes.map(q=>`<option value="${q.id}">${esc(q.subject)} • ${q.qs.length} • ${q.date}</option>`).join('');
+  $('#qsaved').innerHTML=opts;$('#bq').innerHTML=opts;
+}
+function fillFromSheet(){
+  const s=D.sheets.find(x=>x.id===$('#qsrc').value);if(!s)return;
+  $('#qsubj').value=s.subject;$('#qtext').value=s.text;
+}
+$('#qsrc').onchange=fillFromSheet;
+function startSolo(subj,qs){
+  $('#qcard').hidden=false;
+  playQuiz($('#quizBox'),qs,{onEnd:r=>record(subj,r)});
+  $('#qcard').scrollIntoView({behavior:'smooth'});
+}
+$('#qgo').onclick=async()=>{
+  const subj=$('#qsubj').value.trim()||'General',n=Math.min(30,+$('#qn').value||10),text=$('#qtext').value.trim().slice(0,12000);
+  const lang=$('#ql').value==='auto'?'the same language as the material':$('#ql').value;
+  const prompt=`You are an exam writer. ${text?'Using ONLY the study material below':'About the subject below'}, write ${n} multiple-choice questions (${$('#qd').value} difficulty) in ${lang}. Each question has exactly 4 options and exactly one correct answer. Respond ONLY with a JSON array, no markdown, no extra text: [{"q":"question","o":["A","B","C","D"],"a":0,"e":"short explanation"}] where "a" is the index (0-3) of the correct option.\n\nSubject: ${subj}\n\nMaterial:\n${text}`;
+  $('#qgo').disabled=true;$('#qst').textContent=t('gening');
+  try{
+    const raw=await askAI(prompt);
+    const qs=norm(JSON.parse(raw.slice(raw.indexOf('['),raw.lastIndexOf(']')+1)));
+    if(!qs.length)throw new Error('No valid questions');
+    D.quizzes.unshift({id:Date.now()+'',subject:subj,qs,date:todayISO()});save();rQuizSel();startSolo(subj,qs);
+  }catch(e){toast(e.message)}
+  $('#qgo').disabled=false;$('#qst').textContent='';
+};
+$('#qplay').onclick=()=>{
+  const q=D.quizzes.find(x=>x.id===$('#qsaved').value);if(!q)return toast(t('noquiz'));
+  startSolo(q.subject,q.qs);
+};
+
+/* ========== BATTLE (PeerJS, peer-to-peer rooms) ========== */
+let net={peer:null,conns:[],host:false,players:{},started:false,total:0};
+function renderBoard(){
+  const arr=Object.entries(net.players).sort((a,b)=>(b[1].score||0)-(a[1].score||0));
+  $('#board').innerHTML=arr.map(([id,p],i)=>`<div class="pl"><span>${['🥇','🥈','🥉'][i]||(i+1)} ${esc(p.name)}</span>
+  <span>${net.started?(p.idx||0)+'/'+net.total+' • ':''}<b class="red">${p.score||0}</b></span></div>`).join('');
+}
+const bcast=m=>net.conns.forEach(c=>c.open&&c.send(m));
+const pushState=()=>{bcast({t:'state',players:net.players});renderBoard()};
+function openRoom(code){$('#room').hidden=false;$('#rcode').textContent=code;renderBoard()}
+function battleStart(qs,subj){
+  net.started
